@@ -3,7 +3,6 @@ package com.example.fitmate.activities;
 import android.content.Intent;
 import android.os.Bundle;
 import android.text.TextUtils;
-import android.view.View;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
@@ -27,8 +26,8 @@ public class RegisterUserActivity extends AppCompatActivity {
 
     private EditText edtUserId, edtAge, edtHeight, edtWeight;
     private CheckBox cbCancer, cbHeart, cbDiabetes, cbCholesterol;
-    private Button btnSubmitUserData, btnViewBMI;
-    private TextView tvBmiResult, tvBmiStatus;
+    private Button btnSubmitUserData, btnViewBMI, btnAction;
+    private TextView tvBmiResult, tvBmiStatus, tvGreeting;
 
     private FirebaseFirestore db;
     private float bmi = 0f;
@@ -52,36 +51,47 @@ public class RegisterUserActivity extends AppCompatActivity {
 
         btnSubmitUserData = findViewById(R.id.btnSubmitUserData);
         btnViewBMI = findViewById(R.id.btnViewBMI);
+        btnAction = findViewById(R.id.btnAction);
+
         tvBmiResult = findViewById(R.id.tvBmiResult);
         tvBmiStatus = findViewById(R.id.tvBmiStatus);
+        tvGreeting = findViewById(R.id.tvGreeting);
 
         db = FirebaseFirestore.getInstance();
 
-        // Get user email if passed
+        // Get user email
         String email = getIntent().getStringExtra("USER_EMAIL");
         if (email != null && !email.isEmpty()) {
             edtUserId.setText(email);
             fetchAndSetAge(email);
+            fetchAndSetName(email);
+        } else {
+            setGreeting("User");
         }
 
         btnSubmitUserData.setOnClickListener(v -> {
             validateAndCalculateBMI();
 
-            // Show BMI immediately
             tvBmiResult.setText("BMI: " + String.format(Locale.US, "%.2f", bmi));
-            tvBmiResult.setVisibility(View.VISIBLE);
+            tvBmiResult.setVisibility(TextView.VISIBLE);
 
             tvBmiStatus.setText(statusText);
             tvBmiStatus.setTextColor(color);
-            tvBmiStatus.setVisibility(View.VISIBLE);
+            tvBmiStatus.setVisibility(TextView.VISIBLE);
 
-            btnViewBMI.setVisibility(View.VISIBLE); // Show "View More" button
+            btnViewBMI.setVisibility(Button.VISIBLE);
         });
 
         btnViewBMI.setOnClickListener(v -> {
             Intent intent = new Intent(RegisterUserActivity.this, BMIResultActivity.class);
             intent.putExtra("BMI_VALUE", bmi);
             intent.putExtra("BMI_STATUS", statusText);
+            startActivity(intent);
+        });
+
+        // Updated btnAction click listener to open HistoryActivity
+        btnAction.setOnClickListener(v -> {
+            Intent intent = new Intent(RegisterUserActivity.this, HistoryActivity.class);
             startActivity(intent);
         });
     }
@@ -98,19 +108,48 @@ public class RegisterUserActivity extends AppCompatActivity {
                                 int age = calculateAgeFromDOB(dob);
                                 if (age != -1) {
                                     edtAge.setText(String.valueOf(age));
-                                } else {
-                                    Toast.makeText(this, "Failed to parse DOB", Toast.LENGTH_SHORT).show();
                                 }
-                            } else {
-                                Toast.makeText(this, "DOB field not found", Toast.LENGTH_SHORT).show();
                             }
                             break;
                         }
+                    }
+                });
+    }
+
+    private void fetchAndSetName(String email) {
+        db.collection("users")
+                .whereEqualTo("email", email)
+                .get()
+                .addOnSuccessListener(querySnapshot -> {
+                    if (!querySnapshot.isEmpty()) {
+                        DocumentSnapshot doc = querySnapshot.getDocuments().get(0);
+                        String name = doc.getString("name"); // adjust field name if needed
+                        if (name != null && !name.isEmpty()) {
+                            setGreeting(name);
+                        } else {
+                            setGreeting("User");
+                        }
                     } else {
-                        Toast.makeText(this, "User not found in database", Toast.LENGTH_SHORT).show();
+                        setGreeting("User");
                     }
                 })
-                .addOnFailureListener(e -> Toast.makeText(this, "Error: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+                .addOnFailureListener(e -> setGreeting("User"));
+    }
+
+    private void setGreeting(String name) {
+        Calendar calendar = Calendar.getInstance();
+        int hour = calendar.get(Calendar.HOUR_OF_DAY);
+        String greeting;
+
+        if (hour < 12) {
+            greeting = "Good Morning";
+        } else if (hour < 17) {
+            greeting = "Good Afternoon";
+        } else {
+            greeting = "Good Evening";
+        }
+
+        tvGreeting.setText(greeting + ", " + name);
     }
 
     private int calculateAgeFromDOB(String dob) {
@@ -135,7 +174,6 @@ public class RegisterUserActivity extends AppCompatActivity {
 
             return age >= 0 ? age : -1;
         } catch (Exception e) {
-            e.printStackTrace();
             return -1;
         }
     }
@@ -179,13 +217,6 @@ public class RegisterUserActivity extends AppCompatActivity {
                 color = getResources().getColor(android.R.color.holo_red_dark);
             }
 
-            String disease1 = cbDiabetes.isChecked() ? "Diabetes" : "None";
-            String disease2 = cbCholesterol.isChecked() ? "Cholesterol" : "None";
-            String disease3 = cbHeart.isChecked() ? "Heart Disease" : "None";
-            String disease4 = cbCancer.isChecked() ? "Cancer" : "None";
-
-            String currentDate = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(new Date());
-
             Map<String, Object> reportData = new HashMap<>();
             reportData.put("userId", userId);
             reportData.put("age", age);
@@ -193,11 +224,11 @@ public class RegisterUserActivity extends AppCompatActivity {
             reportData.put("weight", weightKg);
             reportData.put("bmi", bmi);
             reportData.put("bmiStatus", statusText);
-            reportData.put("disease1", disease1);
-            reportData.put("disease2", disease2);
-            reportData.put("disease3", disease3);
-            reportData.put("disease4", disease4);
-            reportData.put("date", currentDate);
+            reportData.put("disease1", cbDiabetes.isChecked() ? "Diabetes" : "None");
+            reportData.put("disease2", cbCholesterol.isChecked() ? "Cholesterol" : "None");
+            reportData.put("disease3", cbHeart.isChecked() ? "Heart Disease" : "None");
+            reportData.put("disease4", cbCancer.isChecked() ? "Cancer" : "None");
+            reportData.put("date", new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(new Date()));
 
             db.collection("Reports")
                     .document(userId)

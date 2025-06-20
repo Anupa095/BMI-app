@@ -14,22 +14,21 @@
         android:theme="@style/Theme.FitMate"
         tools:targetApi="31">
 
-
+        <!-- All other activities -->
         <activity android:name=".activities.RegisterActivity" />
         <activity android:name=".activities.RegisterUserActivity" />
-        <activity android:name=".activities.LoginUser"/>
+        <activity android:name=".activities.LoginUser" />
         <activity android:name=".activities.BMIResultActivity" />
         <activity android:name=".activities.MealPlansActivity" />
         <activity android:name=".activities.ExercisePlansActivity" />
+        <activity android:name=".activities.MainActivity" />
+        <activity android:name=".activities.HistoryActivity" />
 
 
 
-
-
-
-
+        <!-- ✅ New Loading Activity (launcher) -->
         <activity
-            android:name=".activities.MainActivity"
+            android:name=".activities.LoadingActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="24dp"
+    android:gravity="center_horizontal"
+    android:background="#FAFAFA">
+
+    <TextView
+        android:id="@+id/tvBmiValue"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Your BMI: 0.0"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:textColor="#212121"
+        android:layout_marginBottom="12dp" />
+
+    <TextView
+        android:id="@+id/tvBmiStatus"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Status: Normal"
+        android:textSize="18sp"
+        android:textColor="#757575"
+        android:layout_marginBottom="30dp" />
+
+    <Button
+        android:id="@+id/btnMealPlans"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Show Meal Plans"
+        android:backgroundTint="#4CAF50"
+        android:textColor="@android:color/white"
+        android:layout_marginBottom="16dp" />
+
+    <Button
+        android:id="@+id/btnExercisePlans"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Show Exercise Routine"
+        android:backgroundTint="#FF9800"
+        android:textColor="@android:color/white" />
+</LinearLayout>

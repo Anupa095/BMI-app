@@ -33,6 +33,7 @@ public class RegisterUserActivity extends AppCompatActivity {
     private float bmi = 0f;
     private String statusText = "";
     private int color;
+    private String email = "";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -59,10 +60,11 @@ public class RegisterUserActivity extends AppCompatActivity {
 
         db = FirebaseFirestore.getInstance();
 
-        // Get user email
-        String email = getIntent().getStringExtra("USER_EMAIL");
-        if (email != null && !email.isEmpty()) {
+        // Get logged-in email
+        email = getIntent().getStringExtra("USER_EMAIL");
+        if (!TextUtils.isEmpty(email)) {
             edtUserId.setText(email);
+            edtUserId.setEnabled(false);
             fetchAndSetAge(email);
             fetchAndSetName(email);
         } else {
@@ -89,9 +91,9 @@ public class RegisterUserActivity extends AppCompatActivity {
             startActivity(intent);
         });
 
-        // Updated btnAction click listener to open HistoryActivity
         btnAction.setOnClickListener(v -> {
             Intent intent = new Intent(RegisterUserActivity.this, HistoryActivity.class);
+            intent.putExtra("USER_EMAIL", email); // ✅ Pass email to history
             startActivity(intent);
         });
     }
@@ -123,12 +125,8 @@ public class RegisterUserActivity extends AppCompatActivity {
                 .addOnSuccessListener(querySnapshot -> {
                     if (!querySnapshot.isEmpty()) {
                         DocumentSnapshot doc = querySnapshot.getDocuments().get(0);
-                        String name = doc.getString("name"); // adjust field name if needed
-                        if (name != null && !name.isEmpty()) {
-                            setGreeting(name);
-                        } else {
-                            setGreeting("User");
-                        }
+                        String name = doc.getString("name");
+                        setGreeting(name != null ? name : "User");
                     } else {
                         setGreeting("User");
                     }
@@ -172,19 +170,18 @@ public class RegisterUserActivity extends AppCompatActivity {
                 age--;
             }
 
-            return age >= 0 ? age : -1;
+            return Math.max(age, 0);
         } catch (Exception e) {
             return -1;
         }
     }
 
     private void validateAndCalculateBMI() {
-        String userId = edtUserId.getText().toString().trim();
         String ageStr = edtAge.getText().toString().trim();
         String heightStr = edtHeight.getText().toString().trim();
         String weightStr = edtWeight.getText().toString().trim();
 
-        if (TextUtils.isEmpty(userId) || TextUtils.isEmpty(ageStr)
+        if (TextUtils.isEmpty(email) || TextUtils.isEmpty(ageStr)
                 || TextUtils.isEmpty(heightStr) || TextUtils.isEmpty(weightStr)) {
             Toast.makeText(this, "Please complete all fields", Toast.LENGTH_SHORT).show();
             return;
@@ -218,7 +215,7 @@ public class RegisterUserActivity extends AppCompatActivity {
             }
 
             Map<String, Object> reportData = new HashMap<>();
-            reportData.put("userId", userId);
+            reportData.put("email", email); // ✅ Store under "email"
             reportData.put("age", age);
             reportData.put("height", heightCm);
             reportData.put("weight", weightKg);
@@ -231,7 +228,7 @@ public class RegisterUserActivity extends AppCompatActivity {
             reportData.put("date", new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(new Date()));
 
             db.collection("Reports")
-                    .document(userId)
+                    .document(email)
                     .set(reportData)
                     .addOnSuccessListener(aVoid ->
                             Toast.makeText(this, "Report saved & updated!", Toast.LENGTH_SHORT).show())
@@ -244,6 +241,13 @@ public class RegisterUserActivity extends AppCompatActivity {
                             Toast.makeText(this, "History entry saved", Toast.LENGTH_SHORT).show())
                     .addOnFailureListener(e ->
                             Toast.makeText(this, "Failed to save history: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+
+            db.collection("newHistory")
+                    .add(reportData)
+                    .addOnSuccessListener(documentReference ->
+                            Toast.makeText(this, "newHistory entry saved", Toast.LENGTH_SHORT).show())
+                    .addOnFailureListener(e ->
+                            Toast.makeText(this, "Failed to save newHistory: " + e.getMessage(), Toast.LENGTH_SHORT).show());
 
         } catch (NumberFormatException e) {
             Toast.makeText(this, "Invalid number format", Toast.LENGTH_SHORT).show();

@@ -29,23 +29,19 @@ public class LoginUser extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login_user);
 
-        // Initialize Views
         edtEmail = findViewById(R.id.edtEmail);
         edtPassword = findViewById(R.id.edtPassword);
         btnLogin = findViewById(R.id.btnLogin);
         btnRegister = findViewById(R.id.btnRegister);
 
-        // Setup progress dialog
         progressDialog = new ProgressDialog(this);
         progressDialog.setMessage("Logging in...");
         progressDialog.setCancelable(false);
 
         db = FirebaseFirestore.getInstance();
 
-        // Login Click
         btnLogin.setOnClickListener(v -> loginUser());
 
-        // Navigate to Register
         btnRegister.setOnClickListener(v -> {
             Intent intent = new Intent(LoginUser.this, RegisterActivity.class);
             startActivity(intent);
@@ -82,10 +78,11 @@ public class LoginUser extends AppCompatActivity {
                     if (!querySnapshot.isEmpty()) {
                         Toast.makeText(this, "Login successful!", Toast.LENGTH_SHORT).show();
 
-                        // Pass email to RegisterUserActivity for autofill
+                        // Start RegisterUserActivity and pass email
                         Intent intent = new Intent(LoginUser.this, RegisterUserActivity.class);
                         intent.putExtra("USER_EMAIL", email);
                         startActivity(intent);
+
                         finish();
                     } else {
                         Toast.makeText(this, "Invalid credentials", Toast.LENGTH_SHORT).show();

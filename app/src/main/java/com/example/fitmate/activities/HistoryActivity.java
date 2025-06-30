@@ -2,10 +2,6 @@ package com.example.fitmate.activities;
 
 import android.os.Bundle;
 import android.util.Log;
-import android.view.View;
-import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
-import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -15,17 +11,11 @@ import com.example.fitmate.R;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-
 public class HistoryActivity extends AppCompatActivity {
 
     private FirebaseFirestore db;
-    private Spinner userEmailSpinner;
     private TextView historyTextView;
-
-    private ArrayList<String> userEmailList = new ArrayList<>();
-    private ArrayAdapter<String> emailAdapter;
+    private String email = "";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -33,58 +23,27 @@ public class HistoryActivity extends AppCompatActivity {
         setContentView(R.layout.activity_history);
 
         db = FirebaseFirestore.getInstance();
-
-        userEmailSpinner = findViewById(R.id.userEmailSpinner);
         historyTextView = findViewById(R.id.historyTextView);
 
-        emailAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, userEmailList);
-        userEmailSpinner.setAdapter(emailAdapter);
+        email = getIntent().getStringExtra("USER_EMAIL");
+        Log.d("HistoryActivity", "Received USER_EMAIL: " + email);
 
-        loadUserEmails(); // load list of emails from Firestore
+        if (email == null || email.isEmpty()) {
+            Toast.makeText(this, "User email not found", Toast.LENGTH_SHORT).show();
+            historyTextView.setText("No email found for current user.");
+            return;
+        }
 
-        userEmailSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                String selectedEmail = userEmailList.get(position);
-                fetchHistoryData(selectedEmail);
-            }
-
-            @Override
-            public void onNothingSelected(AdapterView<?> parent) {
-                // Do nothing
-            }
-        });
-
-    }
-
-    private void loadUserEmails() {
-        db.collection("History") // ✅ FIXED: Now uses top-level collection
-                .get()
-                .addOnSuccessListener(querySnapshots -> {
-                    HashSet<String> uniqueEmails = new HashSet<>();
-                    for (DocumentSnapshot doc : querySnapshots) {
-                        String email = doc.getString("userId");
-                        if (email != null) {
-                            uniqueEmails.add(email);
-                        }
-                    }
-                    userEmailList.clear();
-                    userEmailList.addAll(uniqueEmails);
-                    emailAdapter.notifyDataSetChanged();
-                })
-                .addOnFailureListener(e -> {
-                    Toast.makeText(this, "Failed to load user emails", Toast.LENGTH_SHORT).show();
-                    Log.e("Firestore", "Error loading emails", e);
-                });
+        fetchHistoryData(email);
     }
 
     private void fetchHistoryData(String userEmail) {
-        db.collection("History") // ✅ FIXED: Now uses top-level collection
-                .whereEqualTo("userId", userEmail)
+        db.collection("History")
+                .whereEqualTo("email", userEmail)  // make sure your Firestore docs use field "email"
                 .get()
                 .addOnSuccessListener(querySnapshots -> {
                     if (querySnapshots.isEmpty()) {
-                        historyTextView.setText("No history data found.");
+                        historyTextView.setText("No history data found for " + userEmail);
                         return;
                     }
 
@@ -92,8 +51,8 @@ public class HistoryActivity extends AppCompatActivity {
                     for (DocumentSnapshot doc : querySnapshots) {
                         builder.append("📅 Date: ").append(doc.getString("date")).append("\n")
                                 .append("🎂 Age: ").append(doc.getLong("age")).append("\n")
-                                .append("⚖️ Weight: ").append(doc.getLong("weight")).append(" kg\n")
-                                .append("📏 Height: ").append(doc.getLong("height")).append(" cm\n")
+                                .append("⚖️ Weight: ").append(doc.getDouble("weight")).append(" kg\n")
+                                .append("📏 Height: ").append(doc.getDouble("height")).append(" cm\n")
                                 .append("🧮 BMI: ").append(doc.getDouble("bmi")).append("\n")
                                 .append("📊 Status: ").append(doc.getString("bmiStatus")).append("\n")
                                 .append("🦠 Disease 1: ").append(doc.getString("disease1")).append("\n")
